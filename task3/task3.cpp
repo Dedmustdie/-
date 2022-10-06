@@ -8,7 +8,7 @@ using namespace std;
 
 
 bool isDirectory(wstring path);
-vector<wstring> getItems(wstring dirName);
+void getItems(wstring dirName);
 wstring toRussian(wstring str);
 
 
@@ -32,63 +32,58 @@ int main()
     return 0;
 }
 
-vector<wstring> getItems(wstring dirName)
+void getItems(wstring dirName)
 {
     if (!isDirectory(dirName))
     {
         cout << "Нужен путь к папке, а не файлу\n";
-        return {};
     }
+    else {
 
-    wstring pathEnd = L"*";
-    if (dirName[dirName.length() - 1] != L'\\' && dirName[dirName.length() - 1] != L'/')
-        pathEnd = L"\\*";
-    dirName += pathEnd; 
-    vector<wstring> items;
-    WIN32_FIND_DATAW file;
-    HANDLE hFind = FindFirstFileW(dirName.c_str(), &file);
-    FindNextFileW(hFind, &file);
-    dirName.erase(dirName.length() - 1, 1);
-    wstring name = toRussian(wstring(copyName.begin(), copyName.end()));
-    if (hFind != INVALID_HANDLE_VALUE)
-    {
+        wstring pathEnd = L"*";
+        // Если не корень
+        if (dirName[dirName.length() - 1] != L'\\' && dirName[dirName.length() - 1] != L'/')
+            pathEnd = L"\\*";
+        dirName += pathEnd;
+        WIN32_FIND_DATAW file;
+        // Поиск папки
+        HANDLE hFind = FindFirstFileW(dirName.c_str(), &file);
+        FindNextFileW(hFind, &file);
+        dirName.erase(dirName.length() - 1, 1);
+        wstring name = toRussian(wstring(copyName.begin(), copyName.end()));
+        if (hFind != INVALID_HANDLE_VALUE)
+        {
+            while (FindNextFileW(hFind, &file) != NULL) {
 
-        while (FindNextFileW(hFind, &file) != NULL) {
-            if (wcscmp(file.cFileName, L".") != 0 && wcscmp(file.cFileName, L"..") != 0)
-            {
-                if (&file.cFileName[0] == name + L".txt"){
-                    wcout << dirName + &file.cFileName[0] << "\n";
-                   
-                    
-                }
-            
-                if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) // если мы нашли папку
+                if (wcscmp(file.cFileName, L".") != 0 && wcscmp(file.cFileName, L"..") != 0)
                 {
-                    if (&file.cFileName[0] == name) {
-                        wcout << dirName + &file.cFileName[0] << "\n";
-                        getItems(dirName + &file.cFileName[0]);
+                    if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) // Если папка
+                    {
+                        if (&file.cFileName[0] == name) { // Если название подходит
+                            wcout << dirName + &file.cFileName[0] << "\n";
+                            getItems(dirName + &file.cFileName[0]);
+                        }
+                        else {
+                            getItems(dirName + &file.cFileName[0]);
+                        }
                     }
-                    else {
-                        getItems(dirName + &file.cFileName[0]);
-                    }
+
                 }
-
             }
+            FindClose(hFind);
         }
-        FindClose(hFind);
+        else
+            cout << "Ошибка чтения директории\n";
     }
-    else
-        cout << "Ошибка чтения директории\n";
-
-    return items;
 }
 
 
 
 bool isDirectory(wstring path)
 {
-    return GetFileAttributesW(path.c_str()) != INVALID_FILE_ATTRIBUTES &&
-        GetFileAttributesW(path.c_str()) & FILE_ATTRIBUTE_DIRECTORY;
+    DWORD fileAtr = GetFileAttributesW(path.c_str());
+    return fileAtr != INVALID_FILE_ATTRIBUTES &&
+        fileAtr & FILE_ATTRIBUTE_DIRECTORY;
 }
 
 

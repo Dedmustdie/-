@@ -25,7 +25,6 @@ double function_asm(double x)
 {
 	double res, exp_const = 2.7182818284;
 	__asm {
-
 		//exp(1/2) -> 2^(exp*log2(1/x))
 		finit
 		fld1
