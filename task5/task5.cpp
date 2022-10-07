@@ -1,83 +1,93 @@
 ﻿#include <algorithm>
-#include <chrono>
 #include <intrin.h>
 #include <iostream>
 #include <vector>
+
 #include <clocale>
 
-void generateArrPos(int arr[], int i);
+using namespace std;
 
-int offset = 262144; // 1Mb*1024*1024/4 Расстояние между блоками
-int n = offset * 21; // максимально возможный размер массива
-int size = 10 ^ 7; // размер обходимого блока в КВ
+void generate_random_arr(double arr[]);
+double* get_time(int times_count);
+
+const int SIZE = 10000000;
 
 int main()
 {
 	setlocale(LC_ALL, "Russian");
+	int count;
+	std::cout << "Размер массива: " << SIZE << std::endl;
+	std::cout << "Количество запусков: "; std::cin >> count;
+
+	double* res = get_time(count);
+
+	std::cout << "Результаты: " << std::endl;
+	for (int i = 0; i < count; i++) {
+		std::cout << res[i] << " ";
+	}
+
+	delete[] res;
+	return EXIT_SUCCESS;
+}
+
+double* get_time(int times_count)
+{
 	unsigned clock = 0;
-	int* arr = new int[n];
-	std::vector<int> res;
-	for (int i = 1; i <= 20; ++i)
-	{
-		generateArrPos(arr, i);
-		for (size_t i = 0, j = 0; i < n; i++) //одиночный обход массива для "разогрева" кэш-памяти
-			j = arr[j];
-		__asm//получение времени в тактах
+
+	// время для каждой размерности массива
+	double* res = new double[times_count];
+	for (int i = 0; i < times_count; ++i) {
+		res[i] = 0;
+	}
+
+	// массив, в по которму будем ходить
+	double* arr;
+
+	for (int i = 0; i < times_count; i++) {
+		arr = new double[SIZE];
+
+		generate_random_arr(arr);
+
+		//одиночный обход массива для "разогрева" кэш-памяти
+		int j = 0;
+		for (double i = 0; i < SIZE; i++) {
+			j = (int)arr[j];
+		}
+
+		//получение времени в тактах
+		__asm
 		{
 			rdtscp;
 			mov[clock], eax;
 		}
-		for (size_t i = 0, j = 0; i < n; i++)
-			//обход
-			j = arr[j];
+
+		//обход
+		j = 0;
+		for (double i = 0; i < SIZE; i++) {
+			j = (int)arr[j];
+		}
+
 		__asm
 		{
 			rdtscp;
 			sub eax, [clock]
 				mov[clock], eax;
 		}
-		res.push_back(clock / n);
+
+		std::cout << "Количество тактов: " << clock << std::endl;
+		res[i] = clock;
+		delete[] arr;
 	}
-	for (int i = 1; i <= 20; ++i)
-	{
-		std::cout << "Количество фрагментов:" << i << " Время: " << res[i - 1] << std::endl;
-	}
-	return EXIT_SUCCESS;
+
+	return res;
 }
 
-void generateArrPos(int arr[], int i)// генерация массива обхода, значение элемента массива равно индексу следующего элемента 
-{
-	int countElement = size / i; // количество элементов в одном блоке обхода
-	int count = 0; //количество добавленных элементов в один блок
-	int countBlocks = 1; //количество добавленных блоков
-	for (int j = 0; j < n - 1; ++j)
-	{
-		arr[j] = j + 1;
-	}
-	arr[n - 1] = 0;
-	for (int j = 0; j < n; ++j)
-	{
-		if (count >= countElement)
-		{
-			j = offset * countBlocks;
-			countBlocks++;
-			count = 0;
-		}
-		if (countBlocks > i)
-		{
-			arr[offset * (countBlocks - 2) - 1 + countElement] = 0;
-			break;
-		}
-		if (countBlocks == i)
-		{
-			count++;
-			arr[j] = count;
-		}
-		else
-		{
-			arr[j] = j + offset;
-			count++;
-		}
-	}
-	arr[n - 1] = 0;
+void generate_random_arr(double arr[]) {
+	srand(time(NULL));
+	std::vector<double> index;
+	for (double i = 0; i < SIZE; ++i)
+		index.push_back(i);
+	std::random_shuffle(index.begin(), index.end());
+	for (int i = 0; i < SIZE; i++)
+		arr[i] = index[i];
 }

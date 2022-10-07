@@ -50,6 +50,7 @@ double GetUsedDiskSpace(LPCWSTR disk_letter)
 {
     DWORD sectors_per_cluster, bytes_per_sector, free_clusters_number,
         clusters_total_number;
+
     GetDiskFreeSpaceW(
         disk_letter,
         &sectors_per_cluster,
